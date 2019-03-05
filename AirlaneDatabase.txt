@@ -1,0 +1,654 @@
+/* Standard C++ includes */
+#include "stdafx.h"
+#include <stdlib.h>
+#include <iostream>
+/* Connection libraries */
+#include "mysql_connection.h"
+#include <cppconn/driver.h>
+#include <cppconn/exception.h>
+#include <cppconn/resultset.h>
+#include <cppconn/statement.h>
+#include <cppconn/prepared_statement.h>
+
+using namespace std;
+
+void arayuz();
+//Islemler
+void yeni_sefer();
+void biletsat();
+void yolcusorgu();
+void ucusiptal();
+void sefersorgu();
+void biletiptal();
+void doluluk();
+//Tablolar 
+void kisitablo();
+void ucaktablo();
+void sefertablo();
+void yolcutablo();
+
+int main(int argc,char *argv[])
+{
+
+	arayuz();
+	kisitablo();
+	ucaktablo();
+	sefertablo();
+	yolcutablo();
+
+	int secim;
+	
+	while (1) {
+	printf("Bir secim giriniz: ");
+	scanf_s("%d",&secim);
+		switch (secim) {
+		case 1:
+		{
+			yeni_sefer();
+			break;
+		}
+		case 2: {
+			biletsat();
+			break;
+		}
+
+		case 3: {
+			yolcusorgu();
+			break;
+		}
+		case 4: {
+			ucusiptal();
+			break;
+		}
+		case 5: {
+			sefersorgu();
+			break;
+		}
+		case 6: {
+			biletiptal();
+			break;
+		}
+		case 7: {
+			doluluk();
+			break;
+		   }
+		case 8: {
+			exit(0);
+			break;
+				}
+		}
+	}
+	return EXIT_SUCCESS;
+}
+
+void arayuz() {
+	printf("\t-HNC HAVAYOLU VERITABANI-\t\n");
+	printf("---------------------------------------\n");
+	printf("1| Yeni Sefer Tanimlama\n");
+	printf("2| Bilet Satma\n");
+	printf("3| Yolcu Sorgulama\n");
+	printf("4| Ucus Iptal Etme\n");
+	printf("5| Girilen Ucusta Yer Alan Yolcularin Bilgilerine Ulasma\n"); //Sefer Sorgulama
+	printf("6| Bilet Iptal Etme\n");
+	printf("7| Doluluk Orani Sorgula\n");
+	printf("8| Cikis Yap\n");
+	printf("---------------------------------------\n");
+}
+
+void yeni_sefer() {
+	int ukn, bnn, binn;
+	char tarihh[10], saatt[10];
+	char dizi[500];
+
+	printf("-Kuyruk numarasi 5-6-7 olan ucaklarimiz sefer duzenlemektedir.-\n");
+	printf("\n\tYeni sefer icin alfanumeric giriniz: ");
+	scanf_s("%d", &ukn);
+	if (ukn < 5 || ukn > 7) {
+		printf("\n\tHATALI KUYRUK NUMARASI!\t\n");
+	}
+	else {
+		printf("\n\tYeni sefer icin tarih belirleyiniz: ");
+		scanf_s("%s", &tarihh);
+		printf("\n\tBaslangic noktasi olacak sehrin plaka numarasini giriniz: ");
+		scanf_s("%d", &bnn);
+		printf("\n\tBitis noktasi olacak sehrin plaka numarasini giriniz: ");
+		scanf_s("%d", &binn);
+		printf("\n\tYeni sefer icin saat belirleyiniz: ");
+		scanf_s("%s", &saatt);
+		// Diziyi tampon olarak kullanýyoruz.
+		sprintf_s(dizi, "INSERT INTO sefer(anumeric,bn,bin,tarih,saat) VALUES (%d,%d,%d,%s,%s)", ukn, bnn, binn, tarihh,saatt);
+
+	try {
+		sql::Driver *driver;
+		sql::Connection *con;
+		sql::Statement *stmt;
+		sql::ResultSet *res;
+		sql::PreparedStatement *pstmt;
+
+		driver = get_driver_instance();
+		con = driver->connect("tcp://127.0.0.1:3306", "root", "n05543795981b");
+		/* Connect to the MySQL havayolu database */
+		con->setSchema("havayolu");
+		stmt = con->createStatement();
+		delete stmt;
+		pstmt = con->prepareStatement(dizi);
+		pstmt->executeUpdate();
+
+		delete pstmt;
+		delete con;
+	}
+	catch (sql::SQLException &e) {
+		cout << "# ERR: SQLException in " << __FILE__;
+		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+		cout << "# ERR: " << e.what();
+		cout << " (MySQL error code: " << e.getErrorCode();
+		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+	}
+	cout << endl;
+	printf("-------- SEFER EKLEME ISLEMINIZ GERCEKLESMISTIR -----------\n");
+}
+}
+
+void biletsat(){
+	int bn, bin, ticket, tckn,tcknn, ukn,sehir, kapasite = 0;
+	int bnn, binn;
+	string isim, adres, mail, tarih, tarihh;
+	char dizi[500];
+	printf("\tNereden: ");
+	scanf_s("%d", &bn);
+	printf("\n\tNereye: ");
+	scanf_s("%d", &bin);
+	printf("\n\tYolculuk tarihi: ");
+	scanf_s("%s", &tarih);
+	sprintf_s(dizi, "SELECT * FROM sefer WHERE bn=%d AND bin=%d AND tarih=%s",bn,bin,tarih);
+	try {
+		sql::Driver *driver;
+		sql::Connection *con;
+		sql::Statement *stmt;
+		sql::ResultSet *res;
+		sql::PreparedStatement *pstmt;
+
+		driver = get_driver_instance();
+		con = driver->connect("tcp://127.0.0.1:3306", "root", "n05543795981b");
+		/* Connect to the MySQL havayolu database */
+		con->setSchema("havayolu");
+		stmt = con->createStatement();
+		pstmt = con->prepareStatement(dizi);
+		res = pstmt->executeQuery();
+		res->afterLast();
+		while (res->previous()) {
+			cout << "\nBilgiler: " << endl;
+			cout << "\t Baslangic noktasi::" << res->getInt(1) << endl;
+			cout << "\t Bitis noktasi:" << res->getInt(2) << endl;
+			cout << "\t Tarih:" << res->getString(3) << endl;
+			cout << "\t Saat:" << res->getString(4) << endl;
+			cout << "\t Alfanumeric:" << res->getInt(5) << endl;
+			ukn = res->getInt(5);
+			bnn = res->getInt(1);
+			binn = res->getInt(2);
+			tarihh = res->getString(3);
+		}
+
+		sprintf_s(dizi,"SELECT kapasite FROM ucak WHERE anumeric=%d",ukn);
+		pstmt = con->prepareStatement(dizi);
+		res = pstmt->executeQuery();
+		res->afterLast();
+		while (res->previous()) {
+			cout << "\t Mevcut Yer:" << res->getInt(1) << endl;
+			kapasite = res->getInt(1);
+		}
+
+		printf("\nSatin alinacak bilet sayisi: ");
+		scanf_s("%d", &ticket);
+		if (kapasite > ticket) {
+			for (int i = 0; i < ticket; i++) {
+				printf("\t\nTCKN bilginizi giriniz: ");
+				scanf_s("%d", &tckn);
+				sprintf_s(dizi, "SELECT TCKN FROM kisi WHERE TCKN=%d", tckn);
+				pstmt = con->prepareStatement(dizi);
+				res = pstmt->executeQuery();
+				res->afterLast();
+				while (res->previous()) {
+					//	cout << "\t Mevcut Yer:" << res->getInt(1) << endl;
+					tcknn = res->getInt(1);
+				}
+				if (tcknn == tckn) { //Bu TCKN kisilerde mevcut
+					sprintf_s(dizi,"INSERT INTO yolcu(TCKN,bn,bin,tarih,anumeric) VALUES (%d,%d,%d,%s,%d)", tckn, bnn, binn, tarihh, ukn);
+					pstmt = con->prepareStatement(dizi);
+					pstmt->executeUpdate();
+					printf("\n--------- Bilet Satma Islemi Gerceklesmistir -----------\n");
+					//kapasite = kapasite - ticket;
+				}
+		
+				if(tcknn!=tckn) {
+					printf("\nBoyle bir yolcu bulunmamaktadir.Yolcu kaydi yapiliyor...\n");
+					printf("\n\tIsminizi giriniz: ");
+					scanf_s("%s", &isim);
+					printf("\n\tAdres giriniz: ");
+					scanf_s("%s", &adres);
+					printf("\n\tBulundugunuz sehrin plaka numarasini giriniz: ");
+					scanf_s("%d", &sehir);
+					printf("\n\te-posta adresinizi giriniz: ");
+					scanf_s("%s", &mail);
+					sprintf_s(dizi,"INSERT INTO kisi(TCKN,isim,adres,sehir,mail) VALUES (%d,%s,%s,%d,%s)", tckn, isim, adres, sehir, mail);
+					pstmt = con->prepareStatement(dizi);
+					pstmt->executeUpdate();
+					printf("\n--------- Yolcu Kaydi Yapilmistir! -----------\n");
+					sprintf_s(dizi, "INSERT INTO yolcu(TCKN,bn,bin,tarih,anumeric) VALUES (%d,%d,%d,%s,%d)",tckn, bn, bin, tarih,ukn);
+					pstmt = con->prepareStatement(dizi);
+					pstmt->executeUpdate();
+					printf("\n--------- Bilet Satma Islemi Gerceklesmistir -----------\n");
+					//kapasite = kapasite - ticket;
+				}
+				delete pstmt;
+				delete con;
+				delete stmt;
+				delete res;
+			}
+		}
+
+		if (kapasite < ticket) {
+			printf("\n\t!!!YETERLI YER MEVCUT DEGIL!!!\n");
+		}
+	}
+	catch (sql::SQLException &e) {
+		cout << "# ERR: SQLException in " << __FILE__;
+		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+		cout << "# ERR: " << e.what();
+		cout << " (MySQL error code: " << e.getErrorCode();
+		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+	}
+	cout << endl;
+}
+
+void yolcusorgu() {
+	int ukn,tckn, bnn, binn;
+	string tarih;
+	char dizi[100];
+	printf("Yapmis oldugu ucuslari gormek istediginiz yolcunun TCKN'sini giriniz: ");
+	scanf_s("%d",&tckn);
+	sprintf_s(dizi, "SELECT anumeric,tarih,bn,bin FROM yolcu WHERE TCKN=%d", tckn);
+	try {
+		sql::Driver *driver;
+		sql::Connection *con;
+		sql::Statement *stmt;
+		sql::ResultSet *res;
+		sql::PreparedStatement *pstmt;
+
+		driver = get_driver_instance();
+		con = driver->connect("tcp://127.0.0.1:3306", "root", "n05543795981b");
+		/* Connect to the MySQL havayolu database */
+		con->setSchema("havayolu");
+		stmt = con->createStatement();
+		delete stmt;
+		pstmt = con->prepareStatement(dizi);
+		res = pstmt->executeQuery();
+		res->afterLast();
+			while (res->previous()) {
+				cout << "\nBilgiler: " << endl;
+				cout << "\t tarih:" << res->getString(2) << endl;
+				cout << "\t alfanumeric:" << res->getInt(1) << endl;
+				cout << "\t baslangic noktasi:" << res->getInt(3) << endl;
+				cout << "\t bitis noktasi:" << res->getInt(4) << endl;
+			}
+		
+		delete pstmt;
+		delete res;
+		delete con;
+	}
+	catch (sql::SQLException &e) {
+		cout << "# ERR: SQLException in " << __FILE__;
+		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+		cout << "# ERR: " << e.what();
+		cout << " (MySQL error code: " << e.getErrorCode();
+		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+	}
+	cout << endl;
+}
+
+
+void ucusiptal() {
+	int ukn, tckn, bnn, binn;
+	char dizi[100];;
+	string saat, tarih;
+
+	printf("\tKayitli Tum Seferler Aktariliyor...\t");
+		sprintf_s(dizi, "SELECT * FROM sefer");
+	try {
+		sql::Driver *driver;
+		sql::Connection *con;
+		sql::Statement *stmt;
+		sql::ResultSet *res;
+		sql::PreparedStatement *pstmt;
+
+		driver = get_driver_instance();
+		con = driver->connect("tcp://127.0.0.1:3306", "root", "n05543795981b");
+		/* Connect to the MySQL havayolu database */
+		con->setSchema("havayolu");
+		stmt = con->createStatement();
+		delete stmt;
+		pstmt = con->prepareStatement(dizi);
+		res = pstmt->executeQuery();
+		res->afterLast();
+		while (res->previous()) {
+			cout << "\t " << endl;
+			cout << " baslangic noktasi:" << res->getInt(1) << endl;
+			cout << " bitis noktasi:" << res->getInt(2) << endl;
+			cout << " tarih:" << res->getString(3) << endl;
+			cout << " saat:" << res->getString(4) << endl;
+			cout << " alfanumeric:" << res->getInt(5) << endl;
+		}
+		delete res;
+
+		printf("\n\tIptal etmek istediginiz ucusun:\n");
+		printf("Tarihini giriniz: ");
+		scanf_s("%s", &tarih);
+		printf("Alfanumeric'ini giriniz: ");
+		scanf_s("%d", &ukn);
+		sprintf_s(dizi, "DELETE FROM sefer WHERE tarih=%s AND anumeric=%d", tarih, ukn);
+
+		pstmt = con->prepareStatement(dizi);
+		pstmt->executeUpdate();
+		printf("\tUcus silindi.Bu ucusa kayitli yolcular siliniyor...\n");
+		sprintf_s(dizi, "DELETE FROM yolcu WHERE tarih=%s AND anumeric=%d", tarih, ukn);
+		pstmt = con->prepareStatement(dizi);
+		pstmt->executeUpdate();
+		printf("\t!UCUS IPTALINIZ GERCEKLESMISTIR!\n");
+
+		delete pstmt;
+		delete con;
+	}
+	catch (sql::SQLException &e) {
+		cout << "# ERR: SQLException in " << __FILE__;
+		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+		cout << "# ERR: " << e.what();
+		cout << " (MySQL error code: " << e.getErrorCode();
+		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+	}
+	cout << endl;
+}
+
+void sefersorgu() {
+	int ukn, tckn;
+	string tarih;
+	char dizi[100];
+
+	printf("Ucagin alfanumeric'i: ");
+	scanf_s("%d", &ukn);
+	if (ukn < 5 || ukn>7) {
+		printf("\t !!!Hatali Alfanumeric Girisi!!!\n");
+	}
+	else {
+		printf("Sorgulanan seferin tarihi: ");
+		scanf_s("%s", &tarih);
+		sprintf_s(dizi, "SELECT * FROM kisi WHERE TCKN IN (SELECT TCKN FROM yolcu WHERE tarih=%s AND anumeric=%d)", tarih, ukn);
+
+		try {
+			sql::Driver *driver;
+			sql::Connection *con;
+			sql::Statement *stmt;
+			sql::ResultSet *res;
+			sql::PreparedStatement *pstmt;
+
+			driver = get_driver_instance();
+			con = driver->connect("tcp://127.0.0.1:3306", "root", "n05543795981b");
+			/* Connect to the MySQL havayolu database */
+			con->setSchema("havayolu");
+			stmt = con->createStatement();
+			delete stmt;
+			pstmt = con->prepareStatement(dizi);
+			res = pstmt->executeQuery();
+			res->afterLast();
+				while (res->previous()) {
+					cout << "\nYolcunun Bilgileri: " << endl;
+					cout << "\t TCKN:" << res->getString(1) << endl;
+					cout << "\t Isim:" << res->getString(2) << endl;
+					cout << "\t Adres:" << res->getString(3) << endl;
+					cout << "\t Sehir:" << res->getInt(4) << endl;
+					cout << "\t e-posta:" << res->getString(5) << endl;
+				}
+			
+			delete pstmt;
+			delete res;
+			delete con;
+		}
+		catch (sql::SQLException &e) {
+			cout << "# ERR: SQLException in " << __FILE__;
+			cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+			cout << "# ERR: " << e.what();
+			cout << " (MySQL error code: " << e.getErrorCode();
+			cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+		}
+	}
+	cout << endl;
+}
+
+void biletiptal() {
+	int ukn, tckn;
+	string tarih;
+	char dizi[100];
+	printf("Bileti iptal edilecek yolcunun TCKN'si: ");
+	scanf_s("%d", &tckn);
+	printf("Iptal edilecek biletin tarihi: ");
+	scanf_s("%s",&tarih);
+	printf("Ucagin alfanumeric'i: ");
+	scanf_s("%d", &ukn);
+	sprintf_s(dizi, "SELECT * FROM yolcu WHERE TCKN=%d AND tarih=%s AND anumeric=%d", tckn,tarih,ukn);
+	try {
+		sql::Driver *driver;
+		sql::Connection *con;
+		sql::Statement *stmt;
+		sql::ResultSet *res;
+		sql::PreparedStatement *pstmt;
+
+		driver = get_driver_instance();
+		con = driver->connect("tcp://127.0.0.1:3306", "root", "n05543795981b");
+		/* Connect to the MySQL havayolu database */
+		con->setSchema("havayolu");
+		stmt = con->createStatement();
+		delete stmt;
+		pstmt = con->prepareStatement(dizi);
+		res = pstmt->executeQuery();
+		res->afterLast();
+		while (res->previous()) {
+			cout << "\nBilet Bilgileri: " << endl;
+			cout << "\t TCKN:" << res->getInt(1) << endl;
+			cout << "\t alfanumeric:" << res->getInt(2) << endl;
+			cout << "\t baslangic noktasi:" << res->getInt(4) << endl;
+			cout << "\t bitis noktasi:" << res->getInt(5) << endl;
+			cout << "\t tarih:" << res->getString(3) << endl;
+		}
+		delete res;
+
+		printf("\t-->Silme islemi yapiliyor...\n");
+		sprintf_s(dizi,"DELETE FROM yolcu WHERE TCKN=%d AND tarih=%s AND anumeric=%d",tckn,tarih,ukn);
+		pstmt = con->prepareStatement(dizi);
+		pstmt->executeUpdate();
+		printf("\t!Bilet Iptal Isleminiz Gerceklesti!\n");
+
+		delete pstmt;
+		delete con;
+	}
+	catch (sql::SQLException &e) {
+		cout << "# ERR: SQLException in " << __FILE__;
+		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+		cout << "# ERR: " << e.what();
+		cout << " (MySQL error code: " << e.getErrorCode();
+		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+	}
+	cout << endl;
+}
+
+void doluluk() {
+
+}
+
+void kisitablo() {
+	try {
+		sql::Driver *driver;
+		sql::Connection *con;
+		sql::Statement *stmt;
+		sql::PreparedStatement *pstmt;
+
+		/* Create a connection */
+		driver = get_driver_instance();
+		con = driver->connect("tcp://127.0.0.1:3306", "root", "n05543795981b");
+		/* Connect to the MySQL test database */
+		con->setSchema("havayolu");
+		stmt = con->createStatement();
+		stmt->execute("DROP TABLE IF EXISTS kisi");
+stmt->execute("CREATE TABLE kisi(TCKN INT NOT NULL,isim VARCHAR(10) DEFAULT NULL,adres VARCHAR(50) DEFAULT NULL,sehir INT DEFAULT NULL, mail VARCHAR(30) DEFAULT NULL, PRIMARY KEY(TCKN))");
+	
+		delete stmt;
+
+		/* '?' is the supported placeholder syntax */
+pstmt = con->prepareStatement("INSERT INTO kisi(TCKN,isim,adres,sehir,mail) VALUES (200,'HasibeNur','Amasya',05,'hnur@outlook.com')");
+			pstmt->executeUpdate();
+pstmt = con->prepareStatement("INSERT INTO kisi(TCKN,isim,adres,sehir,mail) VALUES (220,'Berkay','Istanbul',34,'b.akar@outlook.com')");
+			pstmt->executeUpdate();
+pstmt = con->prepareStatement("INSERT INTO kisi(TCKN,isim,adres,sehir,mail) VALUES (300,'Sevda','Kocaeli',41,'sevda41@outlook.com')");
+			pstmt->executeUpdate();
+		
+		delete pstmt;
+		delete con;
+
+	}
+	catch (sql::SQLException &e) {
+		cout << "# ERR: SQLException in " << __FILE__;
+		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+		cout << "# ERR: " << e.what();
+		cout << " (MySQL error code: " << e.getErrorCode();
+		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+	}
+
+	cout << endl;
+}
+
+void sefertablo() {
+	try {
+		sql::Driver *driver;
+		sql::Connection *con;
+		sql::Statement *stmt;
+		//sql::ResultSet *res;
+		sql::PreparedStatement *pstmt;
+
+		/* Create a connection */
+		driver = get_driver_instance();
+		con = driver->connect("tcp://127.0.0.1:3306", "root", "n05543795981b");
+		/* Connect to the MySQL test database */
+		con->setSchema("havayolu");
+		stmt = con->createStatement();
+		stmt->execute("DROP TABLE IF EXISTS sefer");
+stmt->execute("CREATE TABLE sefer(bn INT DEFAULT NULL, bin INT DEFAULT NULL, tarih VARCHAR(10) DEFAULT NULL, saat VARCHAR(10) DEFAULT NULL, anumeric INT NOT NULL)");
+		delete stmt;
+		/* '?' is the supported placeholder syntax */
+	pstmt = con->prepareStatement("INSERT INTO sefer(anumeric,bn,bin,tarih,saat) VALUES (7,34,05,'12082017','1345')");
+			pstmt->executeUpdate();
+	pstmt = con->prepareStatement("INSERT INTO sefer(anumeric,bn,bin,tarih,saat) VALUES (5,34,31,'20052017','2245')");
+			pstmt->executeUpdate();
+	pstmt = con->prepareStatement("INSERT INTO sefer(anumeric,bn,bin,tarih,saat) VALUES (7,34,21,'20052018','2345')");
+			pstmt->executeUpdate();
+	pstmt = con->prepareStatement("INSERT INTO sefer(anumeric,bn,bin,tarih,saat) VALUES (6,34,06,'20052017','2345')");
+			pstmt->executeUpdate();
+	pstmt = con->prepareStatement("INSERT INTO sefer(anumeric,bn,bin,tarih,saat) VALUES (5,41,05,'12082017','1245')");
+			pstmt->executeUpdate();
+	pstmt = con->prepareStatement("INSERT INTO sefer(anumeric,bn,bin,tarih,saat) VALUES (6,41,34,'12082018','1245')");
+			pstmt->executeUpdate();
+
+		delete pstmt;
+		delete con;
+	}
+	catch (sql::SQLException &e) {
+		cout << "# ERR: SQLException in " << __FILE__;
+		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+		cout << "# ERR: " << e.what();
+		cout << " (MySQL error code: " << e.getErrorCode();
+		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+	}
+	cout << endl;
+}
+
+void ucaktablo() {
+	try {
+		sql::Driver *driver;
+		sql::Connection *con;
+		sql::Statement *stmt;
+		sql::PreparedStatement *pstmt;
+
+		/* Create a connection */
+		driver = get_driver_instance();
+		con = driver->connect("tcp://127.0.0.1:3306", "root", "n05543795981b");
+		/* Connect to the MySQL test database */
+		con->setSchema("havayolu");
+		stmt = con->createStatement();
+		stmt->execute("DROP TABLE IF EXISTS ucak");
+		stmt->execute("CREATE TABLE ucak(anumeric INT NOT NULL, model VARCHAR(5) DEFAULT NULL, kapasite INT DEFAULT NULL, PRIMARY KEY(anumeric))");
+		delete stmt;
+
+		/* '?' is the supported placeholder syntax */
+		pstmt = con->prepareStatement("INSERT INTO ucak(anumeric,model,kapasite) VALUES (5,'U1',4)");
+			pstmt->executeUpdate();
+		
+		pstmt = con->prepareStatement("INSERT INTO ucak(anumeric,model,kapasite) VALUES (6,'U2',2)");
+			pstmt->executeUpdate();
+		
+		pstmt = con->prepareStatement("INSERT INTO ucak(anumeric,model,kapasite) VALUES (7,'U3',5)");
+			pstmt->executeUpdate();
+
+		delete pstmt;
+		delete con;
+
+	}
+	catch (sql::SQLException &e) {
+		cout << "# ERR: SQLException in " << __FILE__;
+		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+		cout << "# ERR: " << e.what();
+		cout << " (MySQL error code: " << e.getErrorCode();
+		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+	}
+
+	cout << endl;
+
+}
+
+void yolcutablo() {
+	try {
+		sql::Driver *driver;
+		sql::Connection *con;
+		sql::Statement *stmt;
+	//	sql::ResultSet *res;
+		sql::PreparedStatement *pstmt;
+
+		/* Create a connection */
+		driver = get_driver_instance();
+		con = driver->connect("tcp://127.0.0.1:3306", "root", "n05543795981b");
+		/* Connect to the MySQL test database */
+		con->setSchema("havayolu");
+		stmt = con->createStatement();
+		stmt->execute("DROP TABLE IF EXISTS yolcu");
+stmt->execute("CREATE TABLE yolcu(TCKN INT NOT NULL, anumeric INT NOT NULL, tarih VARCHAR(10) NOT NULL, bn INT NOT NULL, bin INT NOT NULL,PRIMARY KEY(TCKN,anumeric,tarih,bn,bin))");
+		delete stmt;
+
+		/* '?' is the supported placeholder syntax */
+		pstmt = con->prepareStatement("INSERT INTO yolcu(TCKN,anumeric,tarih,bn,bin) VALUES (200,5,'20052017',34,31)");
+		pstmt->executeUpdate();
+		pstmt = con->prepareStatement("INSERT INTO yolcu(TCKN,anumeric,tarih,bn,bin) VALUES (220,6,'20052017',44,31)");
+		pstmt->executeUpdate();
+		pstmt = con->prepareStatement("INSERT INTO yolcu(TCKN,anumeric,tarih,bn,bin) VALUES (200,7,'20052018',34,21)");
+		pstmt->executeUpdate();
+		pstmt = con->prepareStatement("INSERT INTO yolcu(TCKN,anumeric,tarih,bn,bin) VALUES (300,7,'20052018',34,21)");
+		pstmt->executeUpdate();
+
+		delete pstmt;
+		delete con;
+
+	}
+	catch (sql::SQLException &e) {
+		cout << "# ERR: SQLException in " << __FILE__;
+		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+		cout << "# ERR: " << e.what();
+		cout << " (MySQL error code: " << e.getErrorCode();
+		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+	}
+	cout << endl;
+}
